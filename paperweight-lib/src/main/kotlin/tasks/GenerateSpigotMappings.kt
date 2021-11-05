@@ -284,11 +284,11 @@ class SpigotMappingsMergerHandler(private val synths: Synths) : MappingSetMerger
             val newLeftMapping = left.parentClass.getMethodMapping(MethodSignature(newName, left.descriptor)).orNull
             val newMapping = if (newLeftMapping != null) {
                 target.getOrCreateMethodMapping(newLeftMapping.signature).also {
-                    it.deobfuscatedName = left.deobfuscatedName
+                    it.deobfuscatedName = newName
                 }
             } else {
                 target.getOrCreateMethodMapping(left.signature).also {
-                    it.deobfuscatedName = newName
+                    it.deobfuscatedName = left.deobfuscatedName
                 }
             }
             MergeResult(newMapping)
@@ -296,7 +296,7 @@ class SpigotMappingsMergerHandler(private val synths: Synths) : MappingSetMerger
             val newMapping = target.getOrCreateMethodMapping(left.signature).also {
                 it.deobfuscatedName = left.deobfuscatedName
             }
-            return MergeResult(newMapping)
+            MergeResult(newMapping)
         }
     }
 
