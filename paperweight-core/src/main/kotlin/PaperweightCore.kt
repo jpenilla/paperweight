@@ -141,15 +141,19 @@ class PaperweightCore : Plugin<Project> {
             tasks.generateReobfMappings {
                 inputJar.set(shadowJar.flatMap { it.archiveFile })
             }
+            tasks.generateRelocatedReobfMappings {
+                inputJar.set(shadowJar.flatMap { it.archiveFile })
+            }
 
-            val (_, reobfJar) = serverProj.setupServerProject(
+            val (includeMappings, reobfJar) = serverProj.setupServerProject(
                 target,
                 tasks.lineMapJar.flatMap { it.outputJar },
                 tasks.decompileJar.flatMap { it.outputJar },
                 ext.mcDevSourceDir.path,
                 cache.resolve(SERVER_LIBRARIES_TXT),
                 ext.paper.reobfPackagesToFix,
-                tasks.patchReobfMappings.flatMap { it.outputMappings }
+                tasks.patchReobfMappings.flatMap { it.outputMappings },
+                tasks.generateRelocatedReobfMappings
             ) ?: return@afterEvaluate
 
             devBundleTasks.configure(
@@ -165,7 +169,7 @@ class PaperweightCore : Plugin<Project> {
                 tasks.extractFromBundler.map { it.versionJson.path }.convertToFileProvider(layout, providers)
             ) {
                 vanillaJarIncludes.set(ext.vanillaJarIncludes)
-                reobfMappingsFile.set(tasks.patchReobfMappings.flatMap { it.outputMappings })
+                reobfMappingsFile.set(tasks.generateRelocatedReobfMappings.flatMap { it.outputMappings })
 
                 paramMappingsCoordinates.set(
                     target.provider {
@@ -181,7 +185,7 @@ class PaperweightCore : Plugin<Project> {
                 tasks.extractFromBundler.flatMap { it.serverLibrariesList },
                 tasks.downloadServerJar.flatMap { it.outputJar },
                 serverProj,
-                shadowJar,
+                includeMappings.flatMap { it.outputJar },
                 reobfJar,
                 ext.minecraftVersion
             )

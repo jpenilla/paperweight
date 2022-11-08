@@ -22,7 +22,6 @@
 
 package io.papermc.paperweight.taskcontainers
 
-import io.papermc.paperweight.extension.RelocationExtension
 import io.papermc.paperweight.taskcontainers.BundlerJarTasks.Companion.registerVersionArtifact
 import io.papermc.paperweight.tasks.*
 import io.papermc.paperweight.util.*
@@ -107,7 +106,7 @@ class DevBundleTasks(
             serverProject.set(serverProj)
             runtimeConfiguration.set(serverProj.configurations.named(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME))
 
-            relocations.set(serverProj.the<RelocationExtension>().relocations.map { gson.toJson(it) })
+            relocations.set(gson.toJson(listOf<Relocation>()))
             decompiledJar.pathProvider(decompileJar)
             atFile.pathProvider(accessTransformFile)
 

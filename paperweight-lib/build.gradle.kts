@@ -2,6 +2,10 @@ plugins {
     `config-kotlin`
 }
 
+repositories {
+    gradlePluginPortal()
+}
+
 dependencies {
     implementation(libs.httpclient)
     implementation(libs.kotson)
@@ -16,4 +20,5 @@ dependencies {
     implementation(libs.lorenzTiny)
 
     implementation(libs.jbsdiff)
+    compileOnly(libs.gradle.shadow)
 }
