@@ -32,15 +32,23 @@ import io.papermc.paperweight.userdev.internal.setup.util.genSources
 import io.papermc.paperweight.util.*
 import io.papermc.paperweight.util.constants.*
 import javax.inject.Inject
+import kotlin.io.path.*
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.attributes.Bundling
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Delete
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.kotlin.dsl.*
 import org.gradle.util.internal.NameMatcher
@@ -105,6 +113,8 @@ abstract class PaperweightUser : Plugin<Project> {
 
             remapper.from(project.configurations.named(REMAPPER_CONFIG))
             remapperArgs.set(target.provider { userdevSetup.pluginRemapArgs })
+
+            markReobf.set(true)
         }
 
         target.configurations.create(REOBF_CONFIG) {
@@ -136,6 +146,15 @@ abstract class PaperweightUser : Plugin<Project> {
 
             userdev.reobfArtifactConfiguration.get()
                 .configure(target, reobfJar)
+
+            val generateMarker by tasks.registering<GenerateMarker> {
+                markerName.set("META-INF/.mojang-mapped")
+            }
+            target.configure<SourceSetContainer> {
+                named(SourceSet.MAIN_SOURCE_SET_NAME) {
+                    resources.srcDir(generateMarker)
+                }
+            }
 
             if (userdev.injectPaperRepository.get()) {
                 target.repositories.maven(PAPER_MAVEN_REPO_URL) {
@@ -248,4 +267,25 @@ abstract class PaperweightUser : Plugin<Project> {
 
     private fun createContext(project: Project): SetupHandler.Context =
         SetupHandler.Context(project, workerExecutor, javaToolchainService)
+
+    abstract class GenerateMarker : BaseTask() {
+        @get:OutputDirectory
+        abstract val workDir: DirectoryProperty
+
+        @get:Input
+        abstract val markerName: Property<String>
+
+        override fun init() {
+            doNotTrackState("Not worth caching")
+            workDir.convention(project, layout.cache.resolve(paperTaskOutput("dir")))
+        }
+
+        @TaskAction
+        fun run() {
+            workDir.path.deleteRecursively()
+            workDir.path.resolve(markerName.get())
+                .also { it.parent.createDirectories() }
+                .createFile()
+        }
+    }
 }
